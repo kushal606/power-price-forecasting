@@ -66,3 +66,25 @@ cd power-price-forecasting
 
 pip install -r requirements.txt
 python app.py
+
+---
+
+## 📸 Screenshots
+
+### Model Dashboard
+![Dashboard](assets/dashboard.png)
+
+### Evaluation Metrics
+![Evaluation](assets/Evaluation.png)
+
+### Prediction Graph
+![Prediction](assets/Prediction.png)
+
+### Grafana Monitoring (Real-Time)
+![Grafana](assets/Grafana.png)
+
+### Final Metrics Overview
+![Metrics](assets/Metrics.png)
+
+### Residual Analysis
+![Residual](assets/Residual_Analysis.png)
