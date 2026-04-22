@@ -1,0 +1,27 @@
+# prometheus.yml
+# ─────────────────────────────────────────────────────────────────────
+# Prometheus configuration for PowerCast Flask monitoring.
+#
+# Place this file in your Prometheus installation directory, then run:
+#   prometheus --config.file=prometheus.yml
+#
+# PowerCast exposes metrics at:  http://localhost:5000/metrics
+# ─────────────────────────────────────────────────────────────────────
+
+global:
+  scrape_interval:     15s   # how often Prometheus pulls metrics
+  evaluation_interval: 15s   # how often alerting rules are evaluated
+
+scrape_configs:
+
+  # ── PowerCast Flask application ──────────────────────────────────
+  - job_name: 'powercast'
+    static_configs:
+      - targets: ['localhost:5000']
+    metrics_path: '/metrics'
+    scrape_interval: 10s      # faster for a dev dashboard
+
+  # ── Prometheus itself (self-monitoring) ──────────────────────────
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']

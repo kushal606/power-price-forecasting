@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Overview — PowerCast{% endblock %}
+{% block pageTitle %}Overview{% endblock %}
+{% block pageCrumb %}MCP Price Forecasting Platform{% endblock %}
+
+{% block content %}
+<div class="hero-section">
+  <div class="hero-text">
+    <div class="hero-badge">⚡ Real-time Ready</div>
+    <h2 class="hero-h">Electricity Price<br><span class="grad-text">Forecasting Platform</span></h2>
+    <p class="hero-sub">Recursive ML forecasting for Indian power markets using Random Forest with 9.09% MAPE — from 24-hour day-ahead to 90-day seasonal horizons.</p>
+    <div class="hero-actions">
+      <a href="{{ url_for('forecast') }}" class="btn-primary">Run Forecast →</a>
+      <a href="{{ url_for('dashboard') }}" class="btn-ghost">View Models</a>
+    </div>
+  </div>
+  <div class="hero-stats">
+    <div class="stat-box"><div class="sb-val">9.09<sup>%</sup></div><div class="sb-lbl">Best MAPE</div></div>
+    <div class="stat-box"><div class="sb-val">5</div><div class="sb-lbl">ML Models</div></div>
+    <div class="stat-box"><div class="sb-val">96</div><div class="sb-lbl">Blocks/Day</div></div>
+    <div class="stat-box"><div class="sb-val">90</div><div class="sb-lbl">Day Horizon</div></div>
+  </div>
+</div>
+
+<div class="cards-section">
+  <h3 class="section-title">Platform Capabilities</h3>
+  <div class="feature-grid">
+    <div class="feat-card">
+      <div class="feat-ico">🤖</div>
+      <h4>Ensemble ML</h4>
+      <p>Random Forest with lag, rolling, and calendar features. Trained on full IEX historical dataset with anti-leakage split.</p>
+    </div>
+    <div class="feat-card">
+      <div class="feat-ico">📅</div>
+      <h4>Custom Date Range</h4>
+      <p>Select any start and end date. The engine computes blocks automatically and always forecasts forward from the last known price.</p>
+    </div>
+    <div class="feat-card">
+      <div class="feat-ico">⚡</div>
+      <h4>Hybrid Speed</h4>
+      <p>Deque-based rolling windows and pre-allocated NumPy buffers. Large horizons use pattern-aware extension — no timeouts.</p>
+    </div>
+    <div class="feat-card">
+      <div class="feat-ico">📊</div>
+      <h4>Interactive Charts</h4>
+      <p>Plotly-powered charts with zoom, pan, crosshair, range slider, hover tooltips, and toggle between actual vs predicted.</p>
+    </div>
+  </div>
+</div>
+{% endblock %}

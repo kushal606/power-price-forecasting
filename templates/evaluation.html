@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+{% block title %}Evaluation — PowerCast{% endblock %}
+{% block pageTitle %}Model Evaluation{% endblock %}
+{% block pageCrumb %}Actual vs Predicted · Test Set Backtesting{% endblock %}
+
+{% block content %}
+
+{% if error %}
+<!-- ═══ ERROR STATE ═════════════════════════════════════════ -->
+<div class="eval-error">
+  <div class="eval-error-ico">⚠️</div>
+  <h3>Evaluation Unavailable</h3>
+  <p>{{ error }}</p>
+  <a href="{{ url_for('evaluation') }}" class="btn-primary" style="margin-top:1rem;display:inline-flex">
+    Retry
+  </a>
+</div>
+
+{% else %}
+{% set m = result.metrics %}
+
+<!-- ═══ META BANNER ════════════════════════════════════════ -->
+<div class="eval-banner">
+  <div class="eb-left">
+    <div class="eb-title">Test Period</div>
+    <div class="eb-val">{{ result.test_period.start }} → {{ result.test_period.end }}</div>
+  </div>
+  <div class="eb-divider"></div>
+  <div class="eb-left">
+    <div class="eb-title">Train Rows</div>
+    <div class="eb-val mono">{{ '{:,}'.format(m.n_train) }}</div>
+  </div>
+  <div class="eb-divider"></div>
+  <div class="eb-left">
+    <div class="eb-title">Test Rows</div>
+    <div class="eb-val mono">{{ '{:,}'.format(m.n_test) }}</div>
+  </div>
+  <div class="eb-divider"></div>
+  <div class="eb-left">
+    <div class="eb-title">Split Date</div>
+    <div class="eb-val mono">{{ result.split_date }}</div>
+  </div>
+  <div class="eb-divider"></div>
+  <div class="eb-left">
+    <div class="eb-title">Eval Time</div>
+    <div class="eb-val mono">{{ result.timing_seconds }}s</div>
+  </div>
+  <a href="/api/evaluation_csv" class="eb-dl-btn" download title="Download full evaluation CSV">
+    📥 Download CSV
+  </a>
+</div>
+
+<!-- ═══ KPI CARDS ══════════════════════════════════════════ -->
+<div class="eval-kpi-grid">
+
+  <div class="eval-kpi {% if m.mape < 10 %}ekpi-green{% elif m.mape < 15 %}ekpi-yellow{% else %}ekpi-red{% endif %}">
+    <div class="ekpi-badge">
+      {% if m.mape < 10 %}✅ Target{% elif m.mape < 15 %}⚠ Near{% else %}❌ Improve{% endif %}
+    </div>
+    <div class="ekpi-val">{{ m.mape }}<span class="ekpi-unit">%</span></div>
+    <div class="ekpi-lbl">MAPE</div>
+    <div class="ekpi-sub">Mean Absolute % Error</div>
+  </div>
+
+  <div class="eval-kpi">
+    <div class="ekpi-ico">📐</div>
+    <div class="ekpi-val mono">₹{{ '{:,.1f}'.format(m.mae) }}</div>
+    <div class="ekpi-lbl">MAE</div>
+    <div class="ekpi-sub">Mean Absolute Error</div>
+  </div>
+
+  <div class="eval-kpi">
+    <div class="ekpi-ico">📏</div>
+    <div class="ekpi-val mono">₹{{ '{:,.1f}'.format(m.rmse) }}</div>
+    <div class="ekpi-lbl">RMSE</div>
+    <div class="ekpi-sub">Root Mean Squared Error</div>
+  </div>
+
+  <div class="eval-kpi">
+    <div class="ekpi-ico">〜</div>
+    <div class="ekpi-val mono">{{ m.smape }}<span class="ekpi-unit">%</span></div>
+    <div class="ekpi-lbl">sMAPE</div>
+    <div class="ekpi-sub">Symmetric MAPE</div>
+  </div>
+
+  <div class="eval-kpi {% if m.r2 >= 0.9 %}ekpi-green{% elif m.r2 >= 0.75 %}ekpi-yellow{% else %}ekpi-red{% endif %}">
+    <div class="ekpi-ico">R²</div>
+    <div class="ekpi-val mono">{{ m.r2 }}</div>
+    <div class="ekpi-lbl">R² Score</div>
+    <div class="ekpi-sub">Coefficient of Determination</div>
+  </div>
+
+</div>
+
+<!-- ═══ CHART 1 — ACTUAL vs PREDICTED ═════════════════════ -->
+<div class="chart-card">
+  <div class="chart-top">
+    <div class="chart-title">📈 Actual vs Predicted MCP</div>
+    <div class="chart-actions">
+      <button class="ca-btn" onclick="Plotly.relayout('avpChart',{'xaxis.autorange':true,'yaxis.autorange':true})">Reset Zoom</button>
+      <button class="ca-btn" onclick="Plotly.downloadImage('avpChart',{format:'png',filename:'actual_vs_predicted',width:1600,height:700})">Save PNG</button>
+    </div>
+  </div>
+  <div id="avpChart" class="plotly-host"></div>
+</div>
+
+<!-- ═══ CHART 2 + 3 — SIDE BY SIDE ════════════════════════ -->
+<div class="eval-chart-row">
+
+  <!-- Chart 2: Error distribution histogram -->
+  <div class="chart-card">
+    <div class="chart-top">
+      <div class="chart-title">📊 Prediction Error Distribution</div>
+    </div>
+    <div id="errHistChart" class="plotly-host plotly-short"></div>
+  </div>
+
+  <!-- Chart 3: Residual plot -->
+  <div class="chart-card">
+    <div class="chart-top">
+      <div class="chart-title">📉 Residuals Over Time</div>
+    </div>
+    <div id="residChart" class="plotly-host plotly-short"></div>
+  </div>
+
+</div>
+
+<!-- ═══ SAMPLE TABLE ═══════════════════════════════════════ -->
+<div class="table-card">
+  <div class="table-top">
+    <div class="table-title">🗂 Evaluation Sample — Last 100 Test Rows</div>
+    <div class="table-controls">
+      <input type="text" id="evalSearch" class="search-input"
+             placeholder="Search datetime…" oninput="filterEvalTable()"/>
+      <a href="/api/evaluation_csv" class="ca-btn" download>📥 Full CSV</a>
+    </div>
+  </div>
+  <div class="table-scroll">
+    <table class="data-tbl" id="evalTable">
+      <thead>
+        <tr>
+          <th onclick="sortEval(0)">DateTime ↕</th>
+          <th onclick="sortEval(1)">Actual MCP (₹) ↕</th>
+          <th onclick="sortEval(2)">Predicted MCP (₹) ↕</th>
+          <th onclick="sortEval(3)">Error (₹) ↕</th>
+          <th onclick="sortEval(4)">% Error ↕</th>
+        </tr>
+      </thead>
+      <tbody id="evalBody"></tbody>
+    </table>
+  </div>
+  <div class="table-foot">
+    <span id="evalRowInfo">—</span>
+    <div id="evalPaginator" class="paginator"></div>
+  </div>
+</div>
+
+<!-- Pass server data to JS via JSON script tags (no inline eval) -->
+<script id="chartDataJSON" type="application/json">
+  {{ result.chart_data | tojson }}
+</script>
+<script id="residDataJSON" type="application/json">
+  {{ result.residuals | tojson }}
+</script>
+<script id="histDataJSON" type="application/json">
+  {{ result.error_hist | tojson }}
+</script>
+<script id="tableDataJSON" type="application/json">
+  {{ result.sample_table | tojson }}
+</script>
+<script id="metricsJSON" type="application/json">
+  {{ result.metrics | tojson }}
+</script>
+
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{% if result %}
+<script src="{{ url_for('static', filename='js/evaluation.js') }}"></script>
+{% endif %}
+{% endblock %}

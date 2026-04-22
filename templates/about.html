@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}About — PowerCast{% endblock %}
+{% block pageTitle %}About{% endblock %}
+{% block pageCrumb %}Methodology & Technical Details{% endblock %}
+
+{% block content %}
+<div class="about-grid">
+  <div class="about-card">
+    <div class="about-ico">📌</div>
+    <h3>Project Overview</h3>
+    <p>PowerCast forecasts the <strong>Market Clearing Price (MCP)</strong> on India's IEX power exchange using machine learning on 15-minute historical block data.</p>
+    <ul class="about-list">
+      <li>Target: <code>MCP (₹/MWh)</code></li>
+      <li>Frequency: 96 blocks/day (15-min)</li>
+      <li>Train/test split at 2025-01-01</li>
+      <li>Best model: Random Forest (~9.09% MAPE)</li>
+    </ul>
+  </div>
+  <div class="about-card">
+    <div class="about-ico">🔬</div>
+    <h3>Feature Engineering</h3>
+    <ul class="about-list">
+      <li><code>MCP_lag_1</code>, <code>MCP_lag_2</code> — immediate lags</li>
+      <li><code>MCP_lag_96</code> — same time yesterday</li>
+      <li><code>MCP_lag_672</code> — same time last week</li>
+      <li><code>MCP_roll_mean_96</code> — 24h rolling mean</li>
+      <li><code>MCP_roll_std_96</code> — 24h rolling std</li>
+      <li><code>hour</code>, <code>weekday</code>, <code>is_weekend</code>, <code>is_peak_hour</code></li>
+    </ul>
+  </div>
+  <div class="about-card">
+    <div class="about-ico">🛡</div>
+    <h3>Anti-Leakage Strategy</h3>
+    <p>Four columns removed before training:</p>
+    <ul class="about-list">
+      <li><code>MCP_capped</code> — derived from target</li>
+      <li><code>price_lag_1</code> — duplicate of MCP_lag_1</li>
+      <li><code>price_lag_2</code> — duplicate of MCP_lag_2</li>
+      <li><code>price_roll_mean_4</code> — derived from target</li>
+    </ul>
+  </div>
+  <div class="about-card">
+    <div class="about-ico">⚡</div>
+    <h3>Performance Optimisations</h3>
+    <ul class="about-list">
+      <li>Model trained once at startup (warm_up)</li>
+      <li>Pre-allocated NumPy array for predictions</li>
+      <li><code>deque(maxlen=96)</code> rolling buffer</li>
+      <li>Direct <code>numpy.reshape(1,-1)</code> predict calls</li>
+      <li>Hybrid forecast for large horizons</li>
+      <li>CSV dataset cache (10–50× faster loading)</li>
+    </ul>
+  </div>
+  <div class="about-card">
+    <div class="about-ico">🔄</div>
+    <h3>Forecast Horizons</h3>
+    <ul class="about-list">
+      <li><strong>Daily:</strong> 96 blocks · full model</li>
+      <li><strong>Weekly:</strong> 672 blocks · hybrid</li>
+      <li><strong>Monthly:</strong> 2,880 blocks · hybrid</li>
+      <li><strong>Seasonal:</strong> 8,640 blocks · hybrid</li>
+      <li><strong>Custom date:</strong> auto-computes blocks · hybrid if large</li>
+    </ul>
+  </div>
+  <div class="about-card">
+    <div class="about-ico">🛠</div>
+    <h3>Tech Stack</h3>
+    <ul class="about-list">
+      <li>Python 3.10+ / Flask 3.x</li>
+      <li>scikit-learn, NumPy, pandas</li>
+      <li>Plotly.js (frontend charts)</li>
+      <li>Poppins + JetBrains Mono (fonts)</li>
+      <li>CSS custom properties (dark/light)</li>
+    </ul>
+  </div>
+</div>
+{% endblock %}

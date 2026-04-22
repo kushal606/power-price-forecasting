@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+{% block title %}Forecast — PowerCast{% endblock %}
+{% block pageTitle %}Forecast{% endblock %}
+{% block pageCrumb %}Interactive MCP Price Prediction{% endblock %}
+
+{% block content %}
+
+<!-- ═══ CONTROL PANEL ══════════════════════════════════════ -->
+<div class="panel">
+  <div class="panel-header">
+    <span class="panel-title">⚙ Forecast Configuration</span>
+    <div class="mode-tabs">
+      <button class="mtab active" id="tabHorizon" onclick="switchMode('horizon')">Horizon</button>
+      <button class="mtab"        id="tabCustom"  onclick="switchMode('custom')">Custom Dates</button>
+    </div>
+  </div>
+
+  <!-- Horizon mode -->
+  <div class="ctrl-row" id="modeHorizon">
+    <div class="ctrl-group">
+      <label class="ctrl-lbl">Forecast Horizon</label>
+      <div class="horizon-chips">
+        <button class="chip" data-horizon="daily"    onclick="selectChip(this)">📅 Daily</button>
+        <button class="chip active" data-horizon="weekly" onclick="selectChip(this)">📆 Weekly</button>
+        <button class="chip" data-horizon="monthly"  onclick="selectChip(this)">🗓 Monthly</button>
+        <button class="chip" data-horizon="seasonal" onclick="selectChip(this)">🌤 Seasonal</button>
+      </div>
+    </div>
+    <div class="ctrl-group ctrl-info">
+      <label class="ctrl-lbl">Details</label>
+      <div class="horizon-info" id="horizonInfo">672 blocks · 7 days · background job</div>
+    </div>
+    <div class="ctrl-group ctrl-action">
+      <label class="ctrl-lbl">&nbsp;</label>
+      <button class="run-btn" id="runHorizonBtn" onclick="runHorizonForecast()">⚡ Run</button>
+    </div>
+  </div>
+
+  <!-- Custom date mode -->
+  <div class="ctrl-row hidden" id="modeCustom">
+    <div class="ctrl-group">
+      <label class="ctrl-lbl">Start Date</label>
+      <input type="date" id="startDate" class="date-input"/>
+      <span class="date-hint" id="startHint"></span>
+    </div>
+    <div class="ctrl-group">
+      <label class="ctrl-lbl">End Date</label>
+      <input type="date" id="endDate" class="date-input"/>
+    </div>
+    <div class="ctrl-group ctrl-action">
+      <label class="ctrl-lbl">&nbsp;</label>
+      <button class="run-btn" id="runCustomBtn" onclick="runCustomForecast()">⚡ Run</button>
+    </div>
+    <div class="ctrl-group ctrl-dl">
+      <label class="ctrl-lbl">&nbsp;</label>
+      <button class="dl-btn" id="dlBtn" onclick="downloadForecast()" disabled>📥 Excel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Alert -->
+<div class="alert hidden" id="alert">
+  <span id="alertMsg"></span>
+  <button onclick="hideAlert()">✕</button>
+</div>
+
+<!-- ═══ KPI STRIP ══════════════════════════════════════════ -->
+<div class="kpi-strip" id="kpiStrip">
+  <div class="kpi" id="kMin">   <div class="kpi-ico">📉</div><div class="kpi-val">—</div><div class="kpi-lbl">Min MCP</div></div>
+  <div class="kpi" id="kMax">   <div class="kpi-ico">📈</div><div class="kpi-val">—</div><div class="kpi-lbl">Max MCP</div></div>
+  <div class="kpi kpi-accent" id="kMean"><div class="kpi-ico">📊</div><div class="kpi-val">—</div><div class="kpi-lbl">Avg MCP</div></div>
+  <div class="kpi" id="kStd">   <div class="kpi-ico">〜</div><div class="kpi-val">—</div><div class="kpi-lbl">Std Dev</div></div>
+  <div class="kpi" id="kBlocks"><div class="kpi-ico">⚡</div><div class="kpi-val">—</div><div class="kpi-lbl">Blocks</div></div>
+  <div class="kpi" id="kDays">  <div class="kpi-ico">📅</div><div class="kpi-val">—</div><div class="kpi-lbl">Days</div></div>
+</div>
+
+<!-- ═══ 1. MAIN LINE CHART ═════════════════════════════════ -->
+<div class="chart-card">
+  <div class="chart-top">
+    <div class="chart-title" id="chartTitle">MCP Price Forecast</div>
+    <div class="chart-actions">
+      <button class="ca-btn" id="compareDaysBtn" onclick="toggleCompareMode()" title="Overlay each day on the same time axis">⇄ Compare Days</button>
+      <button class="ca-btn" onclick="resetZoom('forecastChart')">Reset Zoom</button>
+      <button class="ca-btn" onclick="saveChart('forecastChart','mcp_forecast')">Save PNG</button>
+    </div>
+  </div>
+  <div class="chart-spinner" id="chartSpinner">
+    <div class="spinner-ring"></div>
+    <p class="spinner-msg" id="spinnerMsg">Initialising…</p>
+  </div>
+  <div id="forecastChart" class="plotly-host"></div>
+</div>
+
+<!-- ═══ 2. CANDLESTICK CHART (new) ════════════════════════ -->
+<div class="chart-card hidden" id="candleCard">
+  <div class="chart-top">
+    <div class="chart-title">
+      🕯 Daily OHLC — Candlestick
+      <span class="chart-subtitle">Open · High · Low · Close per day</span>
+    </div>
+    <div class="chart-actions">
+      <button class="ca-btn" onclick="resetZoom('candleChart')">Reset Zoom</button>
+      <button class="ca-btn" onclick="saveChart('candleChart','mcp_candle')">Save PNG</button>
+    </div>
+  </div>
+  <div id="candleChart" class="plotly-host"></div>
+</div>
+
+<!-- ═══ 3. HEATMAP (new) ═══════════════════════════════════ -->
+<div class="chart-card hidden" id="heatCard">
+  <div class="chart-top">
+    <div class="chart-title">
+      🔥 MCP Heatmap — Hour × Day
+      <span class="chart-subtitle">Colour intensity = price level</span>
+    </div>
+    <div class="chart-actions">
+      <button class="ca-btn" onclick="saveChart('heatChart','mcp_heatmap')">Save PNG</button>
+    </div>
+  </div>
+  <div id="heatChart" class="plotly-host plotly-heatmap"></div>
+</div>
+
+<!-- ═══ 4. DAILY AVERAGE BAR CHART ════════════════════════ -->
+<div class="chart-card hidden" id="dailyCard">
+  <div class="chart-top">
+    <div class="chart-title">📊 Daily Average MCP</div>
+    <div class="chart-actions">
+      <button class="ca-btn" onclick="saveChart('dailyChart','mcp_daily_avg')">Save PNG</button>
+    </div>
+  </div>
+  <div id="dailyChart" class="plotly-host plotly-short"></div>
+</div>
+
+<!-- ═══ 5. DATA TABLE ══════════════════════════════════════ -->
+<div class="table-card hidden" id="tableCard">
+  <div class="table-top">
+    <div class="table-title">Forecast Data</div>
+    <div class="table-controls">
+      <input type="text" id="searchBox" class="search-input" placeholder="Search…" oninput="filterTable()"/>
+      <button class="ca-btn" onclick="downloadForecast()">📥 Download</button>
+    </div>
+  </div>
+  <div class="table-scroll">
+    <table class="data-tbl">
+      <thead>
+        <tr>
+          <th onclick="sortTable(0)">Date/Time ↕</th>
+          <th onclick="sortTable(1)">MCP Forecast (₹/MWh) ↕</th>
+          <th onclick="sortTable(2)">Day ↕</th>
+          <th onclick="sortTable(3)">Hour ↕</th>
+        </tr>
+      </thead>
+      <tbody id="tBody"></tbody>
+    </table>
+  </div>
+  <div class="table-foot">
+    <span id="rowInfo">—</span>
+    <div id="paginator" class="paginator"></div>
+  </div>
+</div>
+
+<!-- ═══ LIVE HOVER PANEL (fixed, top-right of viewport) ════ -->
+<!-- Populated by wireHoverPanel() on plotly_hover events      -->
+<div id="hoverPanel" class="hover-panel hp-hidden">
+  <div class="hp-header">
+    <span class="hp-dot"></span>
+    <span class="hp-label">Live Data</span>
+  </div>
+  <div class="hp-row">
+    <span class="hp-key">Time</span>
+    <span class="hp-val" id="hpTime">—</span>
+  </div>
+  <div class="hp-row">
+    <span class="hp-key">MCP</span>
+    <span class="hp-val hp-price" id="hpPrice">—</span>
+  </div>
+  <div class="hp-row">
+    <span class="hp-key">MA</span>
+    <span class="hp-val" id="hpMA">—</span>
+  </div>
+  <div class="hp-row">
+    <span class="hp-key">Δ Block</span>
+    <span class="hp-val" id="hpDelta">—</span>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/forecast.js') }}"></script>
+{% endblock %}

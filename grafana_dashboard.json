@@ -1,0 +1,222 @@
+{
+  "__inputs": [],
+  "__requires": [
+    { "type": "grafana", "id": "grafana", "name": "Grafana", "version": "9.0.0" },
+    { "type": "datasource", "id": "prometheus", "name": "Prometheus", "version": "1.0.0" }
+  ],
+  "annotations": { "list": [] },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+
+    {
+      "id": 1,
+      "title": "HTTP Request Rate (req/s)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "expr": "rate(powercast_http_requests_total[1m])",
+          "legendFormat": "{{method}} {{endpoint}} {{http_status}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "unit": "reqps",
+          "custom": { "lineWidth": 2 }
+        }
+      },
+      "options": { "tooltip": { "mode": "multi" } }
+    },
+
+    {
+      "id": 2,
+      "title": "Request Latency — P50 / P95 / P99 (seconds)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.50, rate(powercast_http_request_duration_seconds_bucket[5m]))",
+          "legendFormat": "P50",
+          "refId": "A"
+        },
+        {
+          "expr": "histogram_quantile(0.95, rate(powercast_http_request_duration_seconds_bucket[5m]))",
+          "legendFormat": "P95",
+          "refId": "B"
+        },
+        {
+          "expr": "histogram_quantile(0.99, rate(powercast_http_request_duration_seconds_bucket[5m]))",
+          "legendFormat": "P99",
+          "refId": "C"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "s", "custom": { "lineWidth": 2 } }
+      }
+    },
+
+    {
+      "id": 3,
+      "title": "Forecast Requests (total, by horizon)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "targets": [
+        {
+          "expr": "rate(powercast_forecast_requests_total[5m])",
+          "legendFormat": "{{horizon}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "reqps", "custom": { "lineWidth": 2 } }
+      }
+    },
+
+    {
+      "id": 4,
+      "title": "Forecast Duration P95 (seconds, by horizon)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, rate(powercast_forecast_duration_seconds_bucket[5m]))",
+          "legendFormat": "P95 {{horizon}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "s", "custom": { "lineWidth": 2 } }
+      }
+    },
+
+    {
+      "id": 5,
+      "title": "Error Rate (errors/s)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
+      "targets": [
+        {
+          "expr": "rate(powercast_errors_total[5m])",
+          "legendFormat": "{{endpoint}} — {{error_type}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "fixedColor": "red", "mode": "fixed" },
+          "custom": { "lineWidth": 2 }
+        }
+      }
+    },
+
+    {
+      "id": 6,
+      "title": "Last Predicted MCP (₹/MWh)",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 16 },
+      "targets": [
+        {
+          "expr": "powercast_last_mcp_predicted",
+          "legendFormat": "Last MCP",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "displayName": "Last MCP ₹/MWh",
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 4000 },
+              { "color": "red", "value": 6000 }
+            ]
+          }
+        }
+      }
+    },
+
+    {
+      "id": 7,
+      "title": "Average Predicted MCP (₹/MWh)",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 16 },
+      "targets": [
+        {
+          "expr": "powercast_avg_mcp_predicted",
+          "legendFormat": "Avg MCP",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "displayName": "Avg MCP ₹/MWh"
+        }
+      }
+    },
+
+    {
+      "id": 8,
+      "title": "Model Ready",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 20 },
+      "targets": [
+        {
+          "expr": "powercast_model_ready",
+          "legendFormat": "Model Ready",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            { "type": "value", "options": { "0": { "text": "NOT READY", "color": "red" }, "1": { "text": "READY", "color": "green" } } }
+          ],
+          "displayName": "Model Status"
+        }
+      }
+    },
+
+    {
+      "id": 9,
+      "title": "Total Requests (all time)",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 20 },
+      "targets": [
+        {
+          "expr": "sum(powercast_http_requests_total)",
+          "legendFormat": "Total Requests",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "short", "displayName": "Total HTTP Requests" }
+      }
+    }
+
+  ],
+  "refresh": "10s",
+  "schemaVersion": 38,
+  "style": "dark",
+  "tags": ["powercast", "flask", "forecasting"],
+  "templating": { "list": [] },
+  "time": { "from": "now-1h", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "PowerCast — Application Monitoring",
+  "uid": "powercast-monitor-v1",
+  "version": 1
+}

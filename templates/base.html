@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>{% block title %}PowerCast — MCP Forecasting{% endblock %}</title>
+
+  <!-- Poppins from Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+
+  <!-- Plotly CDN -->
+  <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"/>
+  {% block head %}{% endblock %}
+</head>
+<body>
+
+<!-- ═══════════════════════════════
+     SIDEBAR
+═══════════════════════════════ -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-top">
+    <div class="brand">
+      <div class="brand-orb">⚡</div>
+      <div>
+        <div class="brand-name">PowerCast</div>
+        <div class="brand-tag">IEX · MCP Analytics</div>
+      </div>
+    </div>
+  </div>
+
+  <nav class="sidenav">
+    <span class="nav-group-label">PLATFORM</span>
+    <a href="{{ url_for('index') }}"     class="navlink {% if request.endpoint=='index' %}active{% endif %}">
+      <i class="ni">◈</i> Overview
+    </a>
+    <a href="{{ url_for('forecast') }}"  class="navlink {% if request.endpoint=='forecast' %}active{% endif %}">
+      <i class="ni">◎</i> Forecast
+    </a>
+    <a href="{{ url_for('dashboard') }}" class="navlink {% if request.endpoint=='dashboard' %}active{% endif %}">
+      <i class="ni">▣</i> Models
+    </a>
+    <a href="{{ url_for('evaluation') }}" class="navlink {% if request.endpoint=='evaluation' %}active{% endif %}">
+      <i class="ni">◉</i> Evaluation
+    </a>
+    <a href="{{ url_for('about') }}"     class="navlink {% if request.endpoint=='about' %}active{% endif %}">
+      <i class="ni">◇</i> About
+    </a>
+  </nav>
+
+  <div class="sidebar-foot">
+    <div class="model-pill" id="modelPill">
+      <span class="pill-dot pulse" id="pillDot"></span>
+      <span id="pillText">Checking…</span>
+    </div>
+    <button class="theme-toggle" onclick="toggleTheme()" title="Switch theme">
+      <span id="themeIco">☀️</span> <span id="themeLbl">Light</span>
+    </button>
+  </div>
+</aside>
+
+<!-- Overlay (mobile) -->
+<div class="sidebar-veil" id="sidebarVeil" onclick="closeSidebar()"></div>
+
+<!-- ═══════════════════════════════
+     MAIN
+═══════════════════════════════ -->
+<div class="shell">
+  <header class="topbar">
+    <button class="burger" onclick="toggleSidebar()">☰</button>
+    <div class="topbar-heading">
+      <h1>{% block pageTitle %}PowerCast{% endblock %}</h1>
+      <span class="topbar-crumb">{% block pageCrumb %}Indian Electricity Exchange{% endblock %}</span>
+    </div>
+    <div class="topbar-end">
+      <div class="clock" id="clock"></div>
+    </div>
+  </header>
+
+  <main class="page-body">
+    {% block content %}{% endblock %}
+  </main>
+</div>
+
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block title %}Models — PowerCast{% endblock %}
+{% block pageTitle %}Model Dashboard{% endblock %}
+{% block pageCrumb %}ML Model Performance Comparison{% endblock %}
+
+{% block content %}
+
+<!-- Best model banner -->
+<div class="best-banner">
+  <div class="bb-icon">🏆</div>
+  <div>
+    <div class="bb-title">Best Model: {{ best_model.model }}</div>
+    <div class="bb-sub">Test MAPE {{ best_model.test_mape }}%&nbsp;&nbsp;·&nbsp;&nbsp;Test RMSE ₹{{ best_model.test_rmse }}</div>
+  </div>
+  <div class="bb-badge {% if best_model.test_mape < 10 %}badge-green{% else %}badge-yellow{% endif %}">
+    {% if best_model.test_mape < 10 %}✅ Target Achieved{% else %}⚠ Near Target{% endif %}
+  </div>
+</div>
+
+<div class="two-col">
+
+  <!-- Model table -->
+  <div class="panel">
+    <div class="panel-header"><span class="panel-title">📊 Model Comparison</span></div>
+    <div class="table-scroll">
+      <table class="data-tbl">
+        <thead>
+          <tr><th>Model</th><th>Train MAPE</th><th>Test MAPE</th><th>Test RMSE</th><th>Status</th></tr>
+        </thead>
+        <tbody>
+          {% for m in model_results %}
+          <tr class="{% if m.model == best_model.model %}row-best{% endif %}">
+            <td><strong>{{ m.model }}</strong></td>
+            <td>{{ m.train_mape }}%</td>
+            <td class="{% if m.test_mape < 10 %}cell-green{% elif m.test_mape < 15 %}cell-amber{% else %}cell-red{% endif %}">
+              {{ m.test_mape }}%
+            </td>
+            <td class="mono">₹{{ m.test_rmse }}</td>
+            <td>
+              {% if m.test_mape < 10 %}<span class="badge-green">✅ Target</span>
+              {% elif m.test_mape < 15 %}<span class="badge-yellow">⚠ Near</span>
+              {% else %}<span class="badge-red">❌ Improve</span>{% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Charts column -->
+  <div class="panel-stack">
+    <div class="panel">
+      <div class="panel-header"><span class="panel-title">Test MAPE Comparison</span></div>
+      <div id="mapeChart" style="height:220px"></div>
+    </div>
+    <div class="panel">
+      <div class="panel-header"><span class="panel-title">Feature Importance (RF)</span></div>
+      <div id="featChart" style="height:220px"></div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const THEME = document.documentElement.getAttribute('data-theme') || 'dark';
+const tc    = THEME === 'dark' ? '#94a3b8' : '#475569';
+const bg    = 'transparent';
+const grid  = THEME === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.06)';
+const font  = {family: 'Poppins, sans-serif', color: tc, size: 11};
+const baseLayout = {
+  paper_bgcolor: bg, plot_bgcolor: bg,
+  margin: {l:50,r:10,t:10,b:50}, font,
+  xaxis: {gridcolor: grid, tickfont: font},
+  yaxis: {gridcolor: grid, tickfont: font},
+  showlegend: false,
+};
+const cfg = {displaylogo: false, responsive: true,
+  modeBarButtonsToRemove: ['lasso2d','select2d']};
+
+// MAPE chart
+fetch('/api/model_metrics').then(r=>r.json()).then(data=>{
+  const colors = data.map(d => d.test_mape < 10 ? '#10b981' : d.test_mape < 15 ? '#f59e0b' : '#ef4444');
+  Plotly.newPlot('mapeChart', [{
+    type: 'bar', x: data.map(d=>d.model), y: data.map(d=>d.test_mape),
+    marker: {color: colors, cornerradius: 4},
+    hovertemplate: '<b>%{x}</b><br>MAPE: %{y}%<extra></extra>',
+  }], {...baseLayout, yaxis: {...baseLayout.yaxis, title:'Test MAPE (%)'}}, cfg);
+});
+
+// Feature importance
+fetch('/api/feature_importance').then(r=>r.json()).then(data=>{
+  data.sort((a,b) => a.importance - b.importance);
+  Plotly.newPlot('featChart', [{
+    type: 'bar', orientation: 'h',
+    x: data.map(d => +(d.importance*100).toFixed(1)),
+    y: data.map(d => d.feature),
+    marker: {color: '#6366f1', cornerradius: 4},
+    hovertemplate: '<b>%{y}</b><br>%{x}%<extra></extra>',
+  }], {...baseLayout, margin: {l:130,r:10,t:10,b:40}}, cfg);
+});
+</script>
+{% endblock %}
